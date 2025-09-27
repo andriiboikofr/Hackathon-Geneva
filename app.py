@@ -2,6 +2,8 @@
 import streamlit as st
 from streamlit_folium import st_folium
 import folium
+import datetime as dt
+
 
 # --- App setup
 st.set_page_config(page_title="Geneva Map + Hidden Report", layout="wide")
@@ -34,7 +36,43 @@ def topbar(title: str, show_report_button: bool = True):
 def render_map_page():
     topbar("🗺️ Geneva — SITG Basemap Viewer", show_report_button=True)
 
-    # Basemap selection without using the sidebar
+    st.subheader("Scenario inputs")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.session_state['reduction_supply'] = st.number_input("Suplly reduction in %", min_value=1, max_value=100, value=1)
+    with col2:
+        today = dt.date.today()
+        default_start = today - dt.timedelta(days=6)
+        default_end = today
+
+        # Optional boundaries (disable dates outside this window)
+        min_date = today - dt.timedelta(days=365 * 2)  # 2 years ago
+        max_date = today + dt.timedelta(days=365)      # 1 year ahead
+
+        # --- Date range picker (dates only) ---
+        st.session_state['reduction_start'], st.session_state['reduction_end'] = st.date_input(
+            "Select date range",
+            value=(default_start, default_end),
+            min_value=min_date,
+            max_value=max_date,
+            help="Pick start and end dates (no time).",
+        )
+
+        # Normalize in case a single date was returned (Streamlit returns one date if user selects just one)
+        if isinstance(st.session_state['reduction_start'], dt.date) and isinstance(st.session_state['reduction_end'], dt.date):
+            pass
+        else:
+            # If user cleared selection, fall back to defaults
+            st.session_state['reduction_start'], st.session_state['reduction_end'] = default_start, default_end
+
+        # Validate
+        if st.session_state['reduction_start'] > st.session_state['reduction_end']:
+            st.error("Start date cannot be after end date.")
+            st.stop()
+
+        
+        
+
     st.subheader("Basemap")
     col1, col2 = st.columns(2)
     with col1:
