@@ -1,9 +1,14 @@
 
-from app import go, topbar
+from app import go
 import streamlit as st
 
-def render_report_page():
-    topbar("📝 Report generation", show_report_button=False)
+def go(route: str):
+    # Update state + URL, then rerun
+    st.session_state.route = route
+    st.query_params["page"] = route
+    st.rerun()
+
+def render():
 
     st.caption("This page is intentionally hidden from the sidebar. Access via the button or `?page=report`.")
     st.subheader("Parameters")

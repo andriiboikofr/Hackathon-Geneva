@@ -1,18 +1,29 @@
 # streamlit_app.py
+
+import numpy as np
 import streamlit as st
-from streamlit_folium import st_folium
-import folium
 import datetime as dt
+import pandas as pd
+import report_page
+from sitg_map_component import render_sitg_map
+import ast
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.set_theme(style="whitegrid")
+sns.set_context("talk", font_scale=0.9)
+sns.set_palette(sns.color_palette(["#2ecc71"]))
 
 
 # --- App setup
 st.set_page_config(page_title="Geneva Map + Hidden Report", layout="wide")
+buildings = pd.read_csv('data/buildings_cleaned.csv')
+general_data=pd.read_excel('data/data_raw.xlsx', sheet_name='Clean_Data')
 
-# --- Simple router: session_state + optional URL param
-# --- Simple router: session_state + optional URL param
 if "route" not in st.session_state:
     # Read initial route from ?page=...
     st.session_state.route = st.query_params.get("page", "map")
+
 
 def go(route: str):
     # Update state + URL, then rerun
@@ -29,28 +40,72 @@ def topbar(title: str, show_report_button: bool = True):
     with right:
         if show_report_button:
             st.write("")  # spacing
-            if st.button("📝 Report generation", use_container_width=True):
+            if st.button("📝 Report generation", use_container_width=True,disabled='industry' in st.session_state.keys() and st.session_state['industry']=='None'):
                 go("report")
+
 
 # --- PAGE 1: Map (regular Geneva basemap, no overlays)
 def render_map_page():
     topbar("🗺️ Geneva — SITG Basemap Viewer", show_report_button=True)
 
+    # ---- Inputs: industry / organization
     st.subheader("Scenario inputs")
     col1, col2 = st.columns(2)
+
+    # industry selector (+ "None" meaning: all industries)
+    industries = sorted(buildings["category"].dropna().unique().tolist())
+    industry_options = industries + ["None"]
     with col1:
-        st.session_state['reduction_supply'] = st.number_input("Suplly reduction in %", min_value=1, max_value=100, value=1)
+        st.session_state["industry"] = st.selectbox(
+            "Select industry",
+            options=industry_options,
+            index=0 if industries else len(industry_options) - 1,
+            key="selected_industry",
+        )
+
+    # organization selector, only populated when an industry (not "None") is selected
+    if st.session_state["industry"] != "None":
+        org_options = (
+            buildings.loc[buildings["category"] == st.session_state["industry"], "nom"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
+    else:
+        org_options = []  # no specific industry -> no org list
+
+    # Make sure selectbox has at least one safe option
+    safe_org_options = org_options if org_options else ["(no organization)"]
+
+    with col2:
+        st.session_state["organization"] = st.selectbox(
+            "Select Organization",
+            options=safe_org_options,
+            index=0,
+            key="selected_organization",
+            disabled=(st.session_state["industry"] == "None"),
+        )
+        # Normalize the "no org" sentinel to None
+        if st.session_state["organization"] == "(no organization)":
+            st.session_state["organization"] = None
+
+    # ---- Other inputs
+    st.subheader("Scenario inputs")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.session_state["reduction_supply"] = st.number_input(
+            "Supply reduction in %", min_value=1, max_value=100, value=1
+        )
+
     with col2:
         today = dt.date.today()
         default_start = today - dt.timedelta(days=6)
         default_end = today
+        min_date = today - dt.timedelta(days=365 * 2)
+        max_date = today + dt.timedelta(days=365)
 
-        # Optional boundaries (disable dates outside this window)
-        min_date = today - dt.timedelta(days=365 * 2)  # 2 years ago
-        max_date = today + dt.timedelta(days=365)      # 1 year ahead
-
-        # --- Date range picker (dates only) ---
-        st.session_state['reduction_start'], st.session_state['reduction_end'] = st.date_input(
+        date_sel = st.date_input(
             "Select date range",
             value=(default_start, default_end),
             min_value=min_date,
@@ -58,79 +113,156 @@ def render_map_page():
             help="Pick start and end dates (no time).",
         )
 
-        # Normalize in case a single date was returned (Streamlit returns one date if user selects just one)
-        if isinstance(st.session_state['reduction_start'], dt.date) and isinstance(st.session_state['reduction_end'], dt.date):
-            pass
+        if isinstance(date_sel, tuple) and len(date_sel) == 2:
+            st.session_state["reduction_start"], st.session_state["reduction_end"] = date_sel
         else:
-            # If user cleared selection, fall back to defaults
-            st.session_state['reduction_start'], st.session_state['reduction_end'] = default_start, default_end
+            st.session_state["reduction_start"] = st.session_state["reduction_end"] = date_sel
 
-        # Validate
-        if st.session_state['reduction_start'] > st.session_state['reduction_end']:
+        # Safety fallback
+        if not all(isinstance(d, dt.date) for d in (st.session_state["reduction_start"], st.session_state["reduction_end"])):
+            st.session_state["reduction_start"], st.session_state["reduction_end"] = default_start, default_end
+
+        if st.session_state["reduction_start"] > st.session_state["reduction_end"]:
             st.error("Start date cannot be after end date.")
             st.stop()
 
-        
-        
+    # ---- Build org_data depending on selections
+    # Clean year to int if needed (e.g., "2,023" -> 2023)
+    def _to_year(x):
+        try:
+            return int(str(x).replace(",", "").strip())
+        except Exception:
+            return np.nan
 
-    st.subheader("Basemap")
-    col1, col2 = st.columns(2)
-    with col1:
-        basemap_choice = st.selectbox("Choose basemap:",
-                                      ["Plan SITG (map)", "Orthophotos HR (satellite)"],
-                                      index=0)
-    with col2:
-        zoom = st.slider("Zoom level", 8, 19, 13)
+    gdf = general_data.copy()
+    gdf["annee"] = gdf["annee"].map(_to_year)
+    # Coerce energy columns to numeric (handle stray commas)
+    for col in ["kwh_electrique", "kwh_gaz", "kwh_cad", "kwh_mazout"]:
+        if col in gdf.columns:
+            gdf[col] = pd.to_numeric(gdf[col].astype(str).str.replace(",", "", regex=False), errors="coerce")
 
-    CENTER = [46.2044, 6.1432]
-    SITG_PLAN = "https://ge.ch/sitgags2/rest/services/RASTER/PLAN_SITG/MapServer/tile/{z}/{y}/{x}"
-    SITG_ORTO = "https://ge.ch/sitgags2/rest/services/RASTER/ORTHOPHOTOS_HAUTE_RESOLUTION/MapServer/tile/{z}/{y}/{x}"
+    org = st.session_state.get("organization")
+    ind = st.session_state.get("industry")
 
-    m = folium.Map(location=CENTER, zoom_start=zoom, control_scale=True, prefer_canvas=True, tiles=None)
-
-    if "Plan" in basemap_choice:
-        folium.raster_layers.TileLayer(
-            tiles=SITG_PLAN, attr="© SITG | Plan SITG", name="Plan SITG", overlay=False
-        ).add_to(m)
+    if org:  # organization chosen -> use that org’s rows directly
+        org_data = gdf[gdf["nom"] == org].copy()
     else:
-        folium.raster_layers.TileLayer(
-            tiles=SITG_ORTO, attr="© SITG | Orthophotos HR", name="Orthophotos HR", overlay=False
-        ).add_to(m)
+        if ind and ind != "None":  # no org, but industry chosen -> aggregate within that industry
+            org_data = (
+                gdf[gdf["category"] == ind]
+                .groupby("annee", as_index=False)
+                .sum(numeric_only=True)
+            )
+        else:  # neither org nor specific industry -> aggregate across all industries
+            org_data = gdf.groupby("annee", as_index=False).sum(numeric_only=True)
 
-    folium.LayerControl().add_to(m)
-    st_folium(m, width="100%", height=700)
-
-    with st.expander("ℹ️ Info"):
-        st.markdown(
-            "- Data source: **SITG** (Système d'information du territoire à Genève)\n"
-            "- This page shows only the **basemap** (fast). "
-            "Next step: add up to **50 overlays** on demand."
-        )
-
-# --- PAGE 2: Hidden Report Generation (no sidebar entry)
-def render_report_page():
-    topbar("📝 Report generation", show_report_button=False)
-
-    st.caption("This page is intentionally hidden from the sidebar. Access via the button or `?page=report`.")
-    st.subheader("Parameters")
+    # ---- Charts
+    st.title("📈 Energy Trends")
     col1, col2 = st.columns(2)
+
+    def add_pct_deviation(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+        out = df.copy()
+        for c in cols:
+            if c in out.columns and out[c].notna().any():
+                m = out[c].mean(skipna=True)
+                if pd.notna(m) and m != 0:
+                    out[f"{c}_pct"] = (out[c] / m - 1.0) * 100.0
+                else:
+                    out[f"{c}_pct"] = np.nan
+        return out
+
+    org_data = add_pct_deviation(
+        org_data,
+        cols=["kwh_electrique", "kwh_gaz", "kwh_cad", "kwh_mazout"]
+    )
+
+    years = sorted(org_data["annee"].dropna().unique().tolist())
+    if not years:
+        st.warning("No data to plot.")
+        return
+
+    # ===== Left chart: Electricity % deviation =====
     with col1:
-        title = st.text_input("Report title", value="Geneva Mapping Report")
-        author = st.text_input("Author", value="Team")
+        fig1, ax1 = plt.subplots(figsize=(10, 3))
+        if "kwh_electrique_pct" in org_data.columns:
+            sns.lineplot(
+                data=org_data,
+                x="annee", y="kwh_electrique_pct",
+                linewidth=1.5, ax=ax1, color="#2ecc71"
+            )
+            ax1.axhline(0, ls="--", lw=1, color="#999")
+            lo, hi = org_data["kwh_electrique_pct"].min(), org_data["kwh_electrique_pct"].max()
+            span = max(abs(lo), abs(hi))
+            ax1.set_ylim(-span * 1.1, span * 1.1)
+
+        ax1.set_title("Electricity: % vs 4-year avg", fontsize=12, color="#2ecc71")
+        ax1.set_xlabel("Year", fontsize=10)
+        ax1.set_ylabel("% deviation", fontsize=10)
+        ax1.set(xticks=years)
+        sns.despine(ax=ax1)
+        st.pyplot(fig1, clear_figure=True, use_container_width=True)
+
+    # ===== Right chart: Fuels/Heat % deviation =====
     with col2:
-        include_map = st.checkbox("Include current map screenshot (placeholder)", value=True)
-        include_stats = st.checkbox("Include building stats (placeholder)", value=True)
+        fig2, ax2 = plt.subplots(figsize=(10, 3))
 
-    st.subheader("Generate")
-    if st.button("Build report"):
-        st.success("Report generated (placeholder). Plug in your real export logic here (PDF/HTML/Docx).")
+        plotted = False
+        for col, color, label in [
+            ("kwh_gaz_pct", "#2ecc71", "Gaz"),
+            ("kwh_cad_pct", "#9acc2e", "Cad"),
+            ("kwh_mazout_pct", "#3e64d7", "Mazout"),
+        ]:
+            if col in org_data.columns:
+                sns.lineplot(data=org_data, x="annee", y=col,
+                             linewidth=2, ax=ax2, color=color, label=label)
+                plotted = True
 
-    st.divider()
-    if st.button("← Back to map"):
-        go("map")
+        if plotted:
+            ax2.axhline(0, ls="--", lw=1, color="#999")
+            vals = []
+            for c in ["kwh_gaz_pct", "kwh_cad_pct", "kwh_mazout_pct"]:
+                if c in org_data.columns and org_data[c].notna().any():
+                    vals += org_data[c].tolist()
+            if vals:
+                lo, hi = np.nanmin(vals), np.nanmax(vals)
+                span = max(abs(lo), abs(hi))
+                ax2.set_ylim(-span * 1.1, span * 1.1)
 
-# --- Route
+        ax2.set_title("Fuels/Heat: % vs 4-year avg", fontsize=12, color="#2ecc71")
+        ax2.set_xlabel("Year", fontsize=10)
+        ax2.set_ylabel("% deviation", fontsize=10)
+        ax2.set(xticks=years)
+        if plotted:
+            ax2.legend(frameon=False, fontsize=8)
+        sns.despine(ax=ax2)
+        st.pyplot(fig2, clear_figure=True, use_container_width=True)
+
+    # ---- Basemap
+    st.subheader("Basemap")
+    # Collect EGIDs depending on selection
+    def _flatten_egids(series):
+        """Series holds strings like '[2037603, 295147434]'; return flat list of ints."""
+        out = []
+        for v in series.dropna().tolist():
+            try:
+                lst = v if isinstance(v, list) else ast.literal_eval(str(v))
+                out.extend(int(x) for x in lst)
+            except Exception:
+                continue
+        # dedupe, preserve order
+        return list(dict.fromkeys(out))
+
+    if org:  # plot buildings for selected organization
+        egids = _flatten_egids(buildings.loc[buildings["nom"] == org, "EGIDs"])
+        render_sitg_map(egids)
+    else:
+        if ind and ind != "None":  # all buildings in the chosen industry
+            egids = _flatten_egids(buildings.loc[buildings["category"] == ind, "EGIDs"])
+        else:  # no industry -> all buildings
+            egids = _flatten_egids(buildings["EGIDs"])
+        render_sitg_map(egids)
+
 if st.session_state.route == "report":
-    render_report_page()
+    report_page.render()
 else:
     render_map_page()
