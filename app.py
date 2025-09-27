@@ -95,8 +95,11 @@ def render_map_page():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.session_state["reduction_supply"] = st.number_input(
-            "Supply reduction in %", min_value=1, max_value=100, value=1
+        st.session_state["reduction_supply"] = st.selectbox(
+            "Select energy reduction supply target in %",
+            options=[10, 20, 30],
+            index=2,
+            key="selected_reduction_supply",
         )
 
     with col2:
