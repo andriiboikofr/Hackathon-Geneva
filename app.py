@@ -5,6 +5,7 @@ import streamlit as st
 import datetime as dt
 import pandas as pd
 import report_page
+import didier_page
 from sitg_map_component import render_sitg_map
 import ast
 import seaborn as sns
@@ -262,7 +263,10 @@ def render_map_page():
             egids = _flatten_egids(buildings["EGIDs"])
         render_sitg_map(egids)
 
+import didier_page
+
 if st.session_state.route == "report":
     report_page.render()
 else:
     render_map_page()
+
