@@ -1,0 +1,9 @@
+Rapport 5 : Infrastructures numériques
+Contexte :
+Les infrastructures IT (serveurs, data centers) représentent un poste énergétique croissant. Une gestion optimisée est indispensable pour éviter des surcoûts.
+
+Recommandations :
+
+Activez les modes économie d’énergie sur tous les équipements informatiques.
+Virtualisez vos serveurs et migrez vers des solutions cloud certifiées « green ».
+Planifiez l’arrêt automatique des postes en dehors des heures de travail.

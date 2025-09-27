@@ -1,0 +1,9 @@
+Rapport 4 : Production et efficacité énergétique
+Contexte :
+Les processus industriels sont énergivores. Une optimisation ciblée permet de réduire les coûts sans compromettre la qualité ni la cadence de production.
+
+Recommandations :
+
+Planifiez vos cycles de production pour éviter les pics de consommation aux heures critiques.
+Entretenez régulièrement vos machines pour limiter les pertes énergétiques.
+Investissez dans des moteurs et compresseurs à haut rendement pour vos lignes critiques.

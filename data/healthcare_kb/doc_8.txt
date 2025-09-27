@@ -1,0 +1,9 @@
+✅ Rapport 8 : Plans d’urgence et priorisation
+Situation :
+En cas de crise majeure, il faudra décider rapidement quels services maintenir. Sans plan, ces choix seront chaotiques.
+
+Recommandations :
+
+Élaborez une liste prioritaire des services vitaux (réanimation, dialyse, maternité).
+Simulez des scénarios de coupure pour tester la réactivité des équipes.
+Communiquez le plan à tout le personnel pour éviter la confusion.

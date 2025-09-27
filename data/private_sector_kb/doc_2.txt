@@ -1,0 +1,9 @@
+Rapport 2 : Prévention des risques de pénurie
+Contexte :
+Les tensions sur le marché européen de l’énergie peuvent entraîner des interruptions temporaires. Une entreprise non préparée s’expose à des pertes financières et à des ruptures de production.
+
+Recommandations :
+
+Élaborez un plan de continuité énergétique avec des scénarios graduels de réduction.
+Installez des systèmes de suivi en temps réel pour ajuster la consommation selon la charge réseau.
+Diversifiez vos sources d’approvisionnement et négociez des contrats flexibles avec vos fournisseurs.

@@ -1,0 +1,9 @@
+✅ Rapport 5 : Équipements médicaux en veille
+Situation :
+De nombreux appareils consomment même hors utilisation. Cette consommation cachée devient critique en période de tension.
+
+Recommandations :
+
+Dressez une liste des équipements débranchables sans risque (moniteurs, pompes hors service).
+Implémentez un protocole d’arrêt systématique après chaque usage.
+Attribuez la responsabilité à un référent par service pour garantir l’application.

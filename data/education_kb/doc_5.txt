@@ -1,0 +1,7 @@
+Rapport 5 : Numérisation et efficacité énergétique
+Paragraphe 1 :
+La digitalisation croissante dans l’éducation entraîne une hausse de la consommation électrique liée aux serveurs, ordinateurs et tableaux interactifs. Pour y remédier, privilégiez des équipements certifiés basse consommation et activez les modes d’économie d’énergie sur tous les appareils. La virtualisation des serveurs et l’utilisation de solutions cloud peuvent également réduire l’infrastructure physique nécessaire.
+
+Paragraphe 2 :
+Nous vous recommandons de planifier des arrêts systématiques des équipements inutilisés, notamment pendant les vacances et les week-ends. La mise en place d’un système centralisé de gestion informatique permet de contrôler et d’optimiser la consommation à l’échelle de l’établissement. Ces mesures allient économies financières et responsabilité environnementale.
+

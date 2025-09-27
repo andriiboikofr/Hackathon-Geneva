@@ -1,0 +1,9 @@
+✅ Rapport 2 : Scénario de tension hivernale
+Situation :
+Un hiver rigoureux pourrait saturer le réseau électrique. Même les hôpitaux devront réduire leur consommation pour éviter des coupures totales.
+
+Recommandations :
+
+Élaborez un plan d’urgence énergétique avec trois niveaux : normal, tension, crise.
+Priorisez les blocs opératoires et soins intensifs ; réduisez l’éclairage et le chauffage ailleurs.
+Formez le personnel à des procédures simplifiées pour basculer rapidement en mode économie.
