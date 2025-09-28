@@ -1,0 +1,12 @@
+
+cf56ef293d1682e475d5139bdccfe6490b23696c11f0d25e7008812db7898f39: {'last_clicked': None, 'last_object_clicked': None, 'last_object_clicked_tooltip': None, 'last_object_clicked_popup': None, 'all_drawings': None, 'last_active_drawing': None, 'bounds': {'_southWest': {'lat': 46.19474504542988, 'lng': 6.119384765625}, '_northEast': {'lat': 46.214050815339526, 'lng': 6.167020797729493}}, 'zoom': 15, 'last_circle_radius': None, 'last_circle_polygon': None, 'center': {'lat': 46.2044, 'lng': 6.1432}, 'selected_layers': []}
+route: map
+selected_reduction_supply: 30
+industry: Education
+reduction_supply: 30
+selected_organization: UNI Mail
+reduction_start: 2025-09-22
+map_egid: {'last_clicked': None, 'last_object_clicked': None, 'last_object_clicked_tooltip': None, 'last_object_clicked_popup': None, 'all_drawings': None, 'last_active_drawing': None, 'bounds': {'_southWest': {'lat': 46.19474504542988, 'lng': 6.119384765625}, '_northEast': {'lat': 46.214050815339526, 'lng': 6.167020797729493}}, 'zoom': 15, 'last_circle_radius': None, 'last_circle_polygon': None, 'center': {'lat': 46.2044, 'lng': 6.1432}, 'selected_layers': []}
+organization: UNI Mail
+selected_industry: Education
+reduction_end: 2025-09-28

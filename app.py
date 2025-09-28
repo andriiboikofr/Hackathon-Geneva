@@ -42,6 +42,16 @@ def topbar(title: str, show_report_button: bool = True):
         if show_report_button:
             st.write("")  # spacing
             if st.button("📝 Report generation", use_container_width=True,disabled='industry' in st.session_state.keys() and st.session_state['industry']=='None'):
+
+                # Create a string with session state values
+                session_data = "\n".join([f"{key}: {value}" for key, value in st.session_state.items()])
+
+                # Optional: Add a timestamp
+                session_data = f"\n{session_data}"
+                print(session_data)
+                # Save to a .txt file
+                with open("report_session_data.txt", "w") as f:
+                    f.write(session_data)
                 go("report")
 
 
